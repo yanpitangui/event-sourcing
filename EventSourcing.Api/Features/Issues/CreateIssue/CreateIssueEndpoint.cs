@@ -21,13 +21,11 @@ public class CreateIssueEndpoint : Endpoint<CreateIssue>
 
     public override async Task HandleAsync(CreateIssue req, CancellationToken ct)
     {
-        var issue = new Issue();
         
-        _documentSession.Store(issue);
-        _documentSession.Events.Append(issue.Id, new IssueCreated(req.Description, DateTimeOffset.Now));
+        var issueId = _documentSession.Events.StartStream<Issue>(new IssueCreated(req.Description, DateTimeOffset.Now)).Id;
 
         await _documentSession.SaveChangesAsync(ct);
 
-        await SendOkAsync(issue.Id, ct);
+        await SendOkAsync(issueId, ct);
     }
 }

@@ -1,3 +1,4 @@
+using EventSourcing.Api.Domain.Issues;
 using FastEndpoints;
 using Marten;
 
@@ -22,6 +23,11 @@ public sealed class GetIssueEndpoint : Endpoint<GetIssue>
     public override async Task HandleAsync(GetIssue req, CancellationToken ct)
     {
         var events = await _session.Events.FetchStreamAsync(req.IssueId, token: ct);
-        await SendOkAsync(events.Select(x => new { x.Data, Name = x.EventTypeName }).ToArray(), ct);
+        var projection = await _session.Events.AggregateStreamAsync<Issue>(req.IssueId, token: ct);
+        await SendOkAsync(new
+        {
+            projection,
+            RawEventData = events.Select(x => new { x.Data, Name = x.EventTypeName }).ToArray()
+        }, ct);
     }
 }
